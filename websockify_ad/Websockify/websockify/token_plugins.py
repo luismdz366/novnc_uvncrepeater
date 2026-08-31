@@ -4,7 +4,7 @@ import sys
 import time
 import re
 import requests
-
+logger = logging.getLogger("TokenPlugin")
 # Define the application ip and port to where request token validation
 # adpapp = ('192.168.10.115', 80)
 adpapp = ('192.168.10.101', 1088)
@@ -38,13 +38,17 @@ class AuthServer():
             if response.status_code == 200:
                 # Read the response data and serialize to python object (dict)
                 data = response.json()
+                logger.debug("Response data: %s", data)
                 s_id = str(data.get("id"))
                 if data.get("validation") == '1':
                     return (repeater[0], repeater[1], str(data.get("id")))
                 else:
+                    logger.debug("Token validation failed for id: %s", s_id)
                     self.closed(s_id, str(0))
                     return None
             else:
+                logger.debug(
+                    "Token validation request failed with status code: %s for id: %s", response.status_code, s_id)
                 self.closed(s_id, str(0))
                 return None
         except requests.RequestException:
