@@ -1,5 +1,9 @@
 # noVNC project for websockify development
-========================================
+---
+[![Python 3](https://img.shields.io/badge/python-3.x-blue.svg)](https://www.python.org/downloads/)
+[![websockify development](https://img.shields.io/badge/websockify-dev-blue.svg)](https://github.com/novnc/websockify)
+[![noVNC development](https://img.shields.io/badge/noVNC-dev-blue.svg)](https://github.com/novnc/noVNC)
+
 
 This project implements websockify under python 3, it is an adaptation from the previous version from AD project digitization v1.1
 
@@ -100,6 +104,8 @@ Explanation:
 9. Check the service logs with `journalctl` and the repeater log file
 10. Keep the old `init.d` script as a reference and confirm the systemd service file
 11. Edit `/etc/uvnc/uvncrepeater.ini` with the RCMS configuration
+12. Install websockify and noVNC
+13. Install Numpy for python 3
 
 ---
 
@@ -447,6 +453,30 @@ Restart the uvncrepeater service to apply the changes:
 sudo systemctl restart uvncrepeater
 ```
 
+# 12. Install websockify and noVNC
+
+### Clone the repositories for websockify and noVNC into the target directory
+```bash
+git clone --depth 1 https://github.com/luismdz366/novnc_uvncrepeater.git .
+```
+
+Or as an alternative, you can manually download the repository as a ZIP file from GitHub and extract it into the target directory.
+
+#### Test the websockify and noVNC setup
+
+Start the websockify service to test the setup:
+For the test, need to locate in the directory `/ad_novnc/websockify_ad/Websockify` before running the command.
+```bash
+python3 -m websockify --web ../noVNC 6080 localhost:5900
+```
+
+## 13. Install Numpy for Python 3
+
+```bash
+sudo apt update
+sudo apt install python3-numpy
+```
+
 ## Linux Utilities
 
 List services:
@@ -487,6 +517,7 @@ Group=root
 [Install]
 WantedBy=multi-user.target
 ```
+---
 
 ## Testing the UVNC repeater with a VNC client configured with reverse connection
 
