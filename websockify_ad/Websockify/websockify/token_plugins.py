@@ -38,16 +38,16 @@ class AuthServer():
             if response.status_code == 200:
                 # Read the response data and serialize to python object (dict)
                 data = response.json()
-                logger.debug("Response data: %s", data)
+                logger.info("Response data: %s", data)
                 s_id = str(data.get("id"))
                 if data.get("validation") == '1':
                     return (repeater[0], repeater[1], str(data.get("id")))
                 else:
-                    logger.debug("Token validation failed for id: %s", s_id)
+                    logger.info("Token validation failed for id: %s", s_id)
                     self.closed(s_id, str(0))
                     return None
             else:
-                logger.debug(
+                logger.info(
                     "Token validation request failed with status code: %s for id: %s", response.status_code, s_id)
                 self.closed(s_id, str(0))
                 return None
