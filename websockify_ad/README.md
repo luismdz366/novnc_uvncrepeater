@@ -118,8 +118,8 @@ Explanation:
 
 Create a directory to store the UltraVNC Repeater source code:
 ```bash
-mkdir -p ~/uvnc_repeater
-cd ~/uvnc_repeater
+mkdir -p ~/uvnc_repeater_tmp
+cd ~/uvnc_repeater_tmp
 ```
 
 If internet access, try in CLI using the following command to download the UltraVNC Repeater source code:

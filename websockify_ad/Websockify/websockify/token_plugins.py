@@ -9,10 +9,10 @@ import requests
 # adpapp = ('192.168.10.115', 80)
 adpapp = ('192.168.10.101', 1088)
 # Define the repeater ip and port to where the validated token will connect
-repeater = ('192.168.10.115', 5900)
+repeater = ('localhost', 5900)
 # Define the URL path for token validation in the Asset Digitization application
 # url = "/ahm/cms_validation.json"
-url = "/main/system/webdev/uvnc_Dev/dev/token_validation"
+url = "/system/webdev/uvnc_dev/dev/token_validation"
 
 
 class AuthServer():
