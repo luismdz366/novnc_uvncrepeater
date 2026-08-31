@@ -34,7 +34,9 @@ class AuthServer():
         # url = f"http://{ADAPP_SERVER}:{ADAPP_PORT}/{ADAPP_TOKENVALIDATION_URL}"
         try:
             s_id = None
-            response = requests.get(url, params={"adp": token}, timeout=5)
+            # response = requests.get(url, params={"adp": token}, timeout=5)
+            response = requests.get(
+                f"http://{adpapp[0]}:{adpapp[1]}{url}", params={"adp": token}, timeout=5)
             if response.status_code == 200:
                 # Read the response data and serialize to python object (dict)
                 data = response.json()

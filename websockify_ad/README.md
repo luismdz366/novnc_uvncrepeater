@@ -472,6 +472,11 @@ python3 -m websockify --web ../noVNC 6080 localhost:5900
 sudo apt update
 sudo apt install python3-numpy
 ```
+Check python3 packages:
+```bash
+dpkg -l | grep python3
+```
+
 
 ## Linux Utilities
 
