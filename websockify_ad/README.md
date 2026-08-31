@@ -11,11 +11,7 @@ This project implements websockify under python 3, it is an adaptation from the 
 
 1. Modify Auth class for token plugin, use python 3 library `requests`
 2. Modify the function `closed` to use `requests` library
-3. Build a test server with `flask` to test the modified version of websockify, this server will implement the logic of validation and creation of session id and token that noVNC and websockify will use to connect to the remote ultravnc server using the repeater.
 
-## Development server
-
-The development server implemented using flask is for testing the needed features for the websockify server, it is not intended to be used as production server, it to emulate the process of validation and creation of session id and token that noVNC and websockify will use to connect to the remote ultravnc server using the repeater.
 
 ### The source app start the first step to try to connect to remote ultravnc server
 
