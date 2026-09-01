@@ -423,6 +423,11 @@ cd /opt/adwebsockify/websockify_ad/Websockify/websockify
 
 open the file and configure the token plugin according to the requirements of the 3D app server. Save the changes after editing.
 
+```bash
+cd /opt/adwebsockify/websockify_ad/Websockify/websockify
+sudonano token_plugins.py
+```
+
 ```python
 import os
 import sys
@@ -449,6 +454,7 @@ class AuthServer():
 Set:
 `adpapp` = ('192.168.10.101', 1088) -> The ip and port for the 3D app server, usually port is 80
 
+Ctrl+O to save the file and Ctrl+X to exit the editor.
 
 ## 15. Install Python dependencies for Python 3
 
@@ -494,6 +500,7 @@ sudo find /opt/adwebsockify -type d -exec chmod g+s {} \;
 
 Create a systemd service file for websockify:
 ```bash
+sudo nano /etc/systemd/system/websockify.service
 ```
 
 Add the following content to the file:
