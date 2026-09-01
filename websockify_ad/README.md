@@ -12,21 +12,38 @@ This project implements websockify under python 3, it is an adaptation from the 
 ## Summary
 [Installation Instructions](#installation-instructions).
 
-1. [Download the ultravnc server](#1-download-the-ultravnc-server)
-2. [Install UVNC Repeater](#2-install-uvnc-repeater)
-3. [Add user for service](#3-add-user-for-service)
-4. Create the `uvncrep` system user for the service
-5. Test the repeater manually
-6. Create and configure the `uvncrepeater.service` systemd service
-7. Configure persistent systemd journal logs
-8. Check the status of the `uvncrepeater` service
-9. Check the service logs with `journalctl` and the repeater log file
-10. Keep the old `init.d` script as a reference and confirm the systemd service file
-11. Edit `/etc/uvnc/uvncrepeater.ini` with the RCMS configuration
-
-Websockify/NoVNC installation
-12. Install websockify and noVNC
-13. Install Numpy for python 3
+- [Websockify and noVNC project for RCMS proxy connection with UVNC Repeater](#websockify-and-novnc-project-for-rcms-proxy-connection-with-uvnc-repeater)
+- [Installation of RCMS in Ubuntu Server](#installation-of-rcms-in-ubuntu-server)
+  - [Summary](#summary)
+  - [Basic componentes](#basic-componentes)
+  - [1. Download the ultravnc server](#1-download-the-ultravnc-server)
+  - [2. Install UVNC Repeater](#2-install-uvnc-repeater)
+  - [3. Add user for service](#3-add-user-for-service)
+  - [4. Execute the service as test](#4-execute-the-service-as-test)
+  - [5. Test the repeater manually](#5-test-the-repeater-manually)
+  - [6. Create and configure the `uvncrepeater.service` systemd service](#6-create-and-configure-the-uvncrepeaterservice-systemd-service)
+    - [Error with the old init.d script](#error-with-the-old-initd-script)
+  - [7. Configure persistent systemd journal logs](#7-configure-persistent-systemd-journal-logs)
+  - [8. Check the status of the `uvncrepeater` service](#8-check-the-status-of-the-uvncrepeater-service)
+  - [9. Check the service logs with `journalctl` and the repeater log file](#9-check-the-service-logs-with-journalctl-and-the-repeater-log-file)
+  - [10. Keep the old `init.d` script as a reference and confirm the systemd service file](#10-keep-the-old-initd-script-as-a-reference-and-confirm-the-systemd-service-file)
+  - [11. Edit `/etc/uvnc/uvncrepeater.ini` with the RCMS configuration](#11-edit-etcuvncuvncrepeaterini-with-the-rcms-configuration)
+  - [12. Install websockify and noVNC](#12-install-websockify-and-novnc)
+    - [Create target directory for websockify and noVNC](#create-target-directory-for-websockify-and-novnc)
+  - [13. Clone the repositories for websockify and noVNC into the target directory](#13-clone-the-repositories-for-websockify-and-novnc-into-the-target-directory)
+  - [14. Configure the token plugin for the 3D app server](#14-configure-the-token-plugin-for-the-3d-app-server)
+  - [15. Install Python dependencies for Python 3](#15-install-python-dependencies-for-python-3)
+    - [Install Numpy and requests for Python 3](#install-numpy-and-requests-for-python-3)
+  - [16. Create service user](#16-create-service-user)
+  - [17. Create systemd service for websockify](#17-create-systemd-service-for-websockify)
+  - [18. Linux Utilities](#18-linux-utilities)
+    - [Configs from Ad tech team](#configs-from-ad-tech-team)
+    - [Explanation for project adaptation](#explanation-for-project-adaptation)
+    - [The source app start the first step to try to connect to remote ultravnc server](#the-source-app-start-the-first-step-to-try-to-connect-to-remote-ultravnc-server)
+    - [Executing the sebsockify server](#executing-the-sebsockify-server)
+    - [Connection URL to noVNC:](#connection-url-to-novnc)
+    - [VNC server for Asset Digitization application](#vnc-server-for-asset-digitization-application)
+    - [Sequence diagram for VNC connection through the proxy server](#sequence-diagram-for-vnc-connection-through-the-proxy-server)
 
 ---
 
@@ -57,7 +74,7 @@ If not, you will need to download the UltraVNC Repeater source code on a machine
 scp /path/to/uvncrepeater.tar.gz user@server:~/uvnc_repeater
 ```
 
-## 2. [Install UVNC Repeater](#2-install-uvnc-repeater)
+## 2. Install UVNC Repeater
 
 ```bash
 tar -xzf uvncrepeater.tar.gz # Unzip the downloaded file
@@ -98,14 +115,14 @@ sudo useradd -r -s /usr/sbin/nologin uvncrep
 `s` &rarr; Assigns a null shell (disables interactive console/SSH login)
 uvncrep &rarr; User name
 
-#### 4. [TEST] - Execute the service
+## 4. Execute the service as test
 
 Move to the directory:
 ```bash
 cd /usr/sbin
 ```
 
- Execute the repeater manually:
+## 5. Test the repeater manually
 
 execute:
 ```bash
@@ -165,7 +182,7 @@ UltraVnc Fri Apr 17 08:36:19 2026 > startListeningOnPort(): listen() succeeded
 UltraVnc Fri Apr 17 08:36:19 2026 > routeConnections(): starting select() loop, terminate with ctrl+c
 ```
 
-## 5. Create the service for uvncrepeater
+## 6. Create and configure the `uvncrepeater.service` systemd service
 
 Create the service file:
 ```bash
@@ -222,7 +239,7 @@ sudo systemctl enable uvncrepeater
 sudo systemctl restart uvncrepeater
 ```
 
-## 6. Journal logs configuration for increasing the management and performance of the logs
+## 7. Configure persistent systemd journal logs
 
 Enter in the configuration file for the systemd journal:
 ```bash
@@ -257,7 +274,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable uvncrepeater
 sudo systemctl start uvncrepeater
 
-## 7. Check the status of the service
+## 8. Check the status of the `uvncrepeater` service
 ```bash
 sudo systemctl status uvncrepeater
 ```
@@ -278,7 +295,7 @@ The exepected output should show that the uvncrepeater service is active and run
 Aug 28 21:50:23 srvubu115 systemd[1]: Started uvncrepeater.service - UltraVNC Repeater.
 ```
 
-## 8. Logs with journalctl
+## 9. Check the service logs with `journalctl` and the repeater log file
 
 To view the logs of the uvncrepeater service, you can use the `journalctl` command:
 
@@ -297,7 +314,7 @@ cat /var/log/uvncrepeater.log
 sudo chown uvncrep:uvncrep /etc/uvnc/uvncrepeater.ini
 sudo chown uvncrep:uvncrep /var/log/uvncrepeater.log
 ```
-## 9. Old script of uvncrepeater service
+## 10. Keep the old `init.d` script as a reference and confirm the systemd service file
 script de init.d (for reference)
 ```bash
 #!/bin/sh
@@ -352,7 +369,7 @@ ls /etc/systemd/system/uvncrepeater.service
 ```
 
 
-## 10. Edit the uvncrepeater.ini file
+## 11. Edit `/etc/uvnc/uvncrepeater.ini` with the RCMS configuration
 
 Move to the directory:
 ```bash
@@ -374,7 +391,7 @@ Restart the uvncrepeater service to apply the changes:
 sudo systemctl restart uvncrepeater
 ```
 
-## 11. Install websockify and noVNC
+## 12. Install websockify and noVNC
 
 ### Create target directory for websockify and noVNC
 
@@ -387,7 +404,7 @@ Move to the target directory:
 cd /opt/adwebsockify
 ```
 
-## 12. Clone the repositories for websockify and noVNC into the target directory
+## 13. Clone the repositories for websockify and noVNC into the target directory
 
 Whithin the target directory, clone the repository:
 ```bash
@@ -396,7 +413,7 @@ git clone --depth 1 https://github.com/luismdz366/novnc_uvncrepeater.git .
 
 Or as an alternative, you can manually download the repository as a ZIP file from GitHub and extract it into the target directory.
 
-## 13. Configure the toke_plugin for the 3D app server
+## 14. Configure the token plugin for the 3D app server
 
 In the file `token_plugins.py`
 Located in:
@@ -433,7 +450,7 @@ Set:
 `adpapp` = ('192.168.10.101', 1088) -> The ip and port for the 3D app server, usually port is 80
 
 
-## 14. Install python dependencies for Python 3
+## 15. Install Python dependencies for Python 3
 
 ### Install Numpy and requests for Python 3
 In case the current Ubuntu Python 3 installation does not include the `numpy`  and `requests` library by default, you can install it using the following commands:
@@ -448,7 +465,7 @@ Check Python dependencies:
 python3 -c "import numpy, requests; print('Python dependencies OK')"
 ```
 
-## 15. Create service user
+## 16. Create service user
 
 Create a dedicated user for running the Websockify service:
 ```bash
@@ -473,7 +490,7 @@ sudo chmod -R g+rwX /opt/adwebsockify
 sudo find /opt/adwebsockify -type d -exec chmod g+s {} \;
 ```
 
-## 16. Create systemd service for websockify
+## 17. Create systemd service for websockify
 
 Create a systemd service file for websockify:
 ```bash
@@ -532,7 +549,7 @@ Path directory references:
 /etc/systemd/system → service
 ```
 
-## 17. Linux Utilities
+## 18. Linux Utilities
 
 List services:
 ```bash
