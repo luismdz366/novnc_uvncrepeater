@@ -57,7 +57,7 @@ When the validation is true the websockify server return the repeater ip and por
 
 ## Executing the sebsockify server
 
-Te version v1.1 run the proxy with the command:
+The version v1.1 run the proxy with the command:
 
 ```bash
 #!/bin/bash
@@ -100,6 +100,8 @@ Explanation:
 9. Check the service logs with `journalctl` and the repeater log file
 10. Keep the old `init.d` script as a reference and confirm the systemd service file
 11. Edit `/etc/uvnc/uvncrepeater.ini` with the RCMS configuration
+
+Websockify/NoVNC installation
 12. Install websockify and noVNC
 13. Install Numpy for python 3
 
@@ -451,32 +453,161 @@ sudo systemctl restart uvncrepeater
 
 # 12. Install websockify and noVNC
 
+### Create target directory for websockify and noVNC
+
+```bash
+sudo mkdir -p /opt/adwebsockify
+```
+
+Move to the target directory:
+```bash
+cd /opt/adwebsockify
+```
+
 ### Clone the repositories for websockify and noVNC into the target directory
+
+Whithin the target directory, clone the repository:
 ```bash
 git clone --depth 1 https://github.com/luismdz366/novnc_uvncrepeater.git .
 ```
 
 Or as an alternative, you can manually download the repository as a ZIP file from GitHub and extract it into the target directory.
 
-#### Test the websockify and noVNC setup
+### Configure the toke_plugin for the 3D app server
 
-Start the websockify service to test the setup:
-For the test, need to locate in the directory `/ad_novnc/websockify_ad/Websockify` before running the command.
+In the file `token_plugins.py`
+Located in:
 ```bash
-python3 -m websockify --web ../noVNC 6080 localhost:5900
+cd /opt/adwebsockify/websockify_ad/Websockify/websockify
 ```
 
-## 13. Install Numpy for Python 3
+open the file and configure the token plugin according to the requirements of the 3D app server. Save the changes after editing.
+
+```python
+import os
+import sys
+import time
+import re
+import logging
+import requests
+logger = logging.getLogger("TokenPlugin")
+logging.basicConfig(level=logging.INFO)
+
+# Define the application ip and port to where request token validation
+adpapp = ('192.168.10.101', 1088)
+# Define the repeater ip and port to where the validated token will connect
+repeater = ('localhost', 5900)
+# Define the URL path for token validation in the Asset Digitization application
+url = "/ahm/cms_validation.json"
+# url = "/system/webdev/uvnc_dev/dev/token_validation"
+
+
+class AuthServer():
+    """Token plugin that validates tokens by making a request to the Asset Digitization application."""
+```
+
+Set:
+`adpapp` = ('192.168.10.101', 1088) -> The ip and port for the 3D app server, usually port is 80
+
+
+## 13. Install python dependencies for Python 3
+
+### Install Numpy and requests for Python 3
+In case the current Ubuntu Python 3 installation does not include the `numpy`  and `requests` library by default, you can install it using the following commands:
 
 ```bash
 sudo apt update
-sudo apt install python3-numpy
-```
-Check python3 packages:
-```bash
-dpkg -l | grep python3
+sudo apt install python3-numpy python3-requests
 ```
 
+Check Python dependencies:
+```bash
+python3 -c "import numpy, requests; print('Python dependencies OK')"
+```
+
+## Create service user
+
+Create a dedicated user for running the Websockify service:
+```bash
+sudo useradd \
+    --system \
+    --no-create-home \
+    --shell /usr/sbin/nologin \
+    websockify
+```
+
+Add the current user to the websockify group:
+```bash
+sudo usermod -aG websockify "$USER"
+```
+
+Log out and log back in for the group changes to take effect.
+
+Grant group access to the Websockify/noVNC installation directory:
+```bash
+sudo chown -R root:websockify /opt/adwebsockify
+sudo chmod -R g+rwX /opt/adwebsockify
+sudo find /opt/adwebsockify -type d -exec chmod g+s {} \;
+```
+
+## Create systemd service for websockify
+
+Create a systemd service file for websockify:
+```bash
+```
+
+Add the following content to the file:
+```ini
+[Unit]
+Description=Websockify noVNC Proxy
+After=network.target
+
+[Service]
+Type=simple
+
+User=websockify
+Group=websockify
+
+WorkingDirectory=/opt/adwebsockify/websockify_ad/Websockify
+
+ExecStart=/opt/adwebsockify/websockify_ad/Websockify/run \
+    --web /opt/adwebsockify/websockify_ad/noVNC \
+    --token-plugin AuthServer \
+    6080
+
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Reload systemd to apply the changes:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable websockify
+sudo systemctl start websockify
+```
+
+Check status:
+```bash
+sudo systemctl status websockify
+```
+
+Check logs with journalctl:
+```bash
+journalctl -u websockify -f
+```
+
+Path directory references:
+
+```
+/opt        → application installed
+/etc        → configuration
+/var/lib    → persistent data
+/var/log    → logs
+/etc/systemd/system → service
+```
 
 ## Linux Utilities
 
@@ -520,9 +651,18 @@ WantedBy=multi-user.target
 ```
 ---
 
-## Testing the UVNC repeater with a VNC client configured with reverse connection
+#### Test the websockify and noVNC setup
 
+Start the websockify service to test the setup:
+For the test, need to locate in the directory `/ad_novnc/websockify_ad/Websockify` before running the command.
+```bash
+python3 -m websockify --web ../noVNC 6080 localhost:5900
+```
 
+Conneciton url to noVNC:
+`http://192.168.10.115:6080/remote.html?&adp=9ad2904a-482a-43ed-8787-18f136be3323&repeaterID=1001&autoconnect=true&resize=scale&shared=true&reconnect=true&reconnect_delay=5000&scale=true`
+
+scale: (true) was added in order to allow the noVNC client to automatically scale the remote desktop to fit the browser window.
 
 # VNC server for Asset Digitization application
 

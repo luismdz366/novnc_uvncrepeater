@@ -1,18 +1,19 @@
-import logging
 import os
 import sys
 import time
 import re
+import logging
 import requests
 logger = logging.getLogger("TokenPlugin")
+logging.basicConfig(level=logging.INFO)
+
 # Define the application ip and port to where request token validation
-# adpapp = ('192.168.10.115', 80)
 adpapp = ('192.168.10.101', 1088)
 # Define the repeater ip and port to where the validated token will connect
 repeater = ('localhost', 5900)
 # Define the URL path for token validation in the Asset Digitization application
-# url = "/ahm/cms_validation.json"
-url = "/system/webdev/uvnc_dev/dev/token_validation"
+url = "/ahm/cms_validation.json"
+# url = "/system/webdev/uvnc_dev/dev/token_validation"
 
 
 class AuthServer():
@@ -36,7 +37,7 @@ class AuthServer():
             s_id = None
             # response = requests.get(url, params={"adp": token}, timeout=5)
             response = requests.get(
-                f"http://{adpapp[0]}:{adpapp[1]}{url}", params={"adp": token}, timeout=5)
+                f"http://{adpapp[0]}:{adpapp[1]}{url}", params={"adp": token}, timeout=7)
             if response.status_code == 200:
                 # Read the response data and serialize to python object (dict)
                 data = response.json()
