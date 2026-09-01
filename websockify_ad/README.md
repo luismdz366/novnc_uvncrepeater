@@ -1,4 +1,4 @@
-# noVNC project for websockify development
+# Websockify and noVNC project for RCMS proxy connection with UVNC Repeater
 ---
 [![Python 3](https://img.shields.io/badge/python-3.x-blue.svg)](https://www.python.org/downloads/)
 [![websockify development](https://img.shields.io/badge/websockify-dev-blue.svg)](https://github.com/novnc/websockify)
@@ -7,91 +7,14 @@
 
 This project implements websockify under python 3, it is an adaptation from the previous version from AD project digitization v1.1
 
-## Planning for project adaptation
-
-1. Modify Auth class for token plugin, use python 3 library `requests`
-2. Modify the function `closed` to use `requests` library
-
-
-### The source app start the first step to try to connect to remote ultravnc server
-
-The first step is triggered by the source app, in the version v1.1 this source app is the 3xs AD app, the trigger is located in a button that execute the process of create a session id and token, then perform a request to the url on the proxy or the built-in 3xs server, this requets is to noVNC hmtl client entry point, the url is like this:
-
-```
-http://<proxy_or_3xs_server>/remote.html?adp=<token>
-```
-
-```
-http://10.11.54.40:6080/remote.html?&adp=9ad2904a-482a-43ed-8787-18f136be3323&repeaterID=1006&autoconnect=true&resize=scale&shared=true&reconnect=true&reconnect_delay=5000
-```
-
-The noVNC client redirect the request to the websockify server with the token, then the websockify server validate the token performing a request to the source app, in this case the 3xs AD app, in the url:
-
-```
-http://<ad_app>:80/ahm/cms_validation.json?adp=<token>
-```
-
-The adp app validate the token and return:
-
-```json
-{
-    "validation": true,
-    "id": some data,
-}
-```
-
-The filed validation is true if the token is valid
-
-If the validation is different of true, the websockify server call a functiion `closed` by sendign an id parameter (thus semas to be a random id) and a status filed with string in 0
-
-```python
-# Envia el evento de cierre de la conexion al servidor del Asset Digitization
-def closed(self, id, status):
-    connection = httplib.HTTPConnection(adpapp[0], adpapp[1])
-    connection.request("GET", url+"?id="+str(id)+"&status="+str(status))
-    response = connection.getresponse()
-    connection.close()
-```
-
-When the validation is true the websockify server return the repeater ip and port to upgrade the connection to websocket and start the communication with the remote ultravnc server using the repeater.
-
-## Executing the sebsockify server
-
-The version v1.1 run the proxy with the command:
-
-```bash
-#!/bin/bash
-nohup /usr/local/adpgcc/Version1.1/websockify-master/run \
---web="/usr/local/adpgcc/Version1.1/noVNC-master" \
---token-plugin=AuthServer 6080 >> /var/log/adremote.log &
-```
-
-> [!TIP] No hang up, run the programmin background even if terminal windows is closed.
-
-In the line `--token-plugin=AuthServer 6080 >> /var/log/adremote.log &`, AuthServer is the name of the class within the module `token_plugins.py`, by this the logic previously described is implemented, the port 6080 is the port where the websockify server will listen for incoming connections.
-
-Whithin the file `run`:
-
-```bash
-#!/usr/bin/env sh
-set -e
-cd "$(dirname "$0")"
-exec python -m websockify "$@"
-```
-
-Explanation:
-- `#!/usr/bin/env sh`: Especifica que el script debe ejecutarse con el intérprete de comandos `sh`.
-- `set -e`: Hace que el script se detenga si cualquier comando devuelve un error.
-- `cd "$(dirname "$0")"`: Cambia el directorio de trabajo al directorio donde se encuentra el script, asegurando que los comandos posteriores se ejecuten en el contexto correcto.
-- `exec python -m websockify "$@"`: Ejecuta el módulo `websockify` con cualquier argumento que se le haya pasado al script, reemplazando el proceso actual del script con el proceso de Python. Esto es útil para asegurar que el script se ejecute correctamente y que cualquier argumento se pase al módulo `websockify` sin necesidad de manejar manualmente los argumentos dentro del script.
-
 # Installation of RCMS in Ubuntu Server
 
 ## Summary
+[Installation Instructions](#installation-instructions).
 
-1. Download the UltraVNC Repeater source code
-2. Install the Linux compiler and build dependencies
-3. Compile and install the UltraVNC Repeater
+1. [Download the ultravnc server](#1-download-the-ultravnc-server)
+2. [Install UVNC Repeater](#2-install-uvnc-repeater)
+3. [Add user for service](#3-add-user-for-service)
 4. Create the `uvncrep` system user for the service
 5. Test the repeater manually
 6. Create and configure the `uvncrepeater.service` systemd service
@@ -116,7 +39,7 @@ Websockify/NoVNC installation
 
 ---
 
-###### 1. Download the ultravnc server
+## 1. Download the ultravnc server
 
 Create a directory to store the UltraVNC Repeater source code:
 ```bash
@@ -134,7 +57,7 @@ If not, you will need to download the UltraVNC Repeater source code on a machine
 scp /path/to/uvncrepeater.tar.gz user@server:~/uvnc_repeater
 ```
 
-###### 2. Install UVNC Repeter
+## 2. [Install UVNC Repeater](#2-install-uvnc-repeater)
 
 ```bash
 tar -xzf uvncrepeater.tar.gz # Unzip the downloaded file
@@ -165,7 +88,7 @@ After installation you can check that the file is in `/usr/sbin/uvncrepeatersvc`
 ls /usr/sbin | grep uvnc
 ```
 
-###### 3. Add user for service
+## 3. Add user for service
 
 ```bash
 sudo useradd -r -s /usr/sbin/nologin uvncrep
@@ -242,7 +165,7 @@ UltraVnc Fri Apr 17 08:36:19 2026 > startListeningOnPort(): listen() succeeded
 UltraVnc Fri Apr 17 08:36:19 2026 > routeConnections(): starting select() loop, terminate with ctrl+c
 ```
 
-#### 5. Create the service for uvncrepeater
+## 5. Create the service for uvncrepeater
 
 Create the service file:
 ```bash
@@ -253,7 +176,7 @@ If not installed nano, you can install it using the following command:
 ```bash
 sudo apt-get install nano
 ```
-##### Error with the old init.d script
+### Error with the old init.d script
 
 The script of init.d is a classic script used before systemd, this is pre-systemd (SysVinit or compatible)
 To avoid error with the old init.d script, you should check if it exists and remove it before starting the service with systemd.
@@ -299,7 +222,7 @@ sudo systemctl enable uvncrepeater
 sudo systemctl restart uvncrepeater
 ```
 
-#### 6. Journal logs configuration for increasing the management and performance of the logs
+## 6. Journal logs configuration for increasing the management and performance of the logs
 
 Enter in the configuration file for the systemd journal:
 ```bash
@@ -334,7 +257,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable uvncrepeater
 sudo systemctl start uvncrepeater
 
-#### 7. Check the status of the service
+## 7. Check the status of the service
 ```bash
 sudo systemctl status uvncrepeater
 ```
@@ -355,7 +278,7 @@ The exepected output should show that the uvncrepeater service is active and run
 Aug 28 21:50:23 srvubu115 systemd[1]: Started uvncrepeater.service - UltraVNC Repeater.
 ```
 
-#### 8. Logs with journalctl
+## 8. Logs with journalctl
 
 To view the logs of the uvncrepeater service, you can use the `journalctl` command:
 
@@ -374,7 +297,7 @@ cat /var/log/uvncrepeater.log
 sudo chown uvncrep:uvncrep /etc/uvnc/uvncrepeater.ini
 sudo chown uvncrep:uvncrep /var/log/uvncrepeater.log
 ```
-## 10. Old script of uvncrepeater service
+## 9. Old script of uvncrepeater service
 script de init.d (for reference)
 ```bash
 #!/bin/sh
@@ -429,7 +352,7 @@ ls /etc/systemd/system/uvncrepeater.service
 ```
 
 
-#### 11. Edit the uvncrepeater.ini file
+## 10. Edit the uvncrepeater.ini file
 
 Move to the directory:
 ```bash
@@ -451,7 +374,7 @@ Restart the uvncrepeater service to apply the changes:
 sudo systemctl restart uvncrepeater
 ```
 
-# 12. Install websockify and noVNC
+## 11. Install websockify and noVNC
 
 ### Create target directory for websockify and noVNC
 
@@ -464,7 +387,7 @@ Move to the target directory:
 cd /opt/adwebsockify
 ```
 
-### Clone the repositories for websockify and noVNC into the target directory
+## 12. Clone the repositories for websockify and noVNC into the target directory
 
 Whithin the target directory, clone the repository:
 ```bash
@@ -473,7 +396,7 @@ git clone --depth 1 https://github.com/luismdz366/novnc_uvncrepeater.git .
 
 Or as an alternative, you can manually download the repository as a ZIP file from GitHub and extract it into the target directory.
 
-### Configure the toke_plugin for the 3D app server
+## 13. Configure the toke_plugin for the 3D app server
 
 In the file `token_plugins.py`
 Located in:
@@ -510,7 +433,7 @@ Set:
 `adpapp` = ('192.168.10.101', 1088) -> The ip and port for the 3D app server, usually port is 80
 
 
-## 13. Install python dependencies for Python 3
+## 14. Install python dependencies for Python 3
 
 ### Install Numpy and requests for Python 3
 In case the current Ubuntu Python 3 installation does not include the `numpy`  and `requests` library by default, you can install it using the following commands:
@@ -525,7 +448,7 @@ Check Python dependencies:
 python3 -c "import numpy, requests; print('Python dependencies OK')"
 ```
 
-## Create service user
+## 15. Create service user
 
 Create a dedicated user for running the Websockify service:
 ```bash
@@ -550,7 +473,7 @@ sudo chmod -R g+rwX /opt/adwebsockify
 sudo find /opt/adwebsockify -type d -exec chmod g+s {} \;
 ```
 
-## Create systemd service for websockify
+## 16. Create systemd service for websockify
 
 Create a systemd service file for websockify:
 ```bash
@@ -609,7 +532,7 @@ Path directory references:
 /etc/systemd/system → service
 ```
 
-## Linux Utilities
+## 17. Linux Utilities
 
 List services:
 ```bash
@@ -626,7 +549,7 @@ List open ports:
 ss -tulnp
 ```
 
-## Configs from Ad tech team
+### Configs from Ad tech team
 
 Configuration for the service, only as reference
 
@@ -651,20 +574,92 @@ WantedBy=multi-user.target
 ```
 ---
 
-#### Test the websockify and noVNC setup
-
-Start the websockify service to test the setup:
-For the test, need to locate in the directory `/ad_novnc/websockify_ad/Websockify` before running the command.
-```bash
-python3 -m websockify --web ../noVNC 6080 localhost:5900
-```
-
-Conneciton url to noVNC:
-`http://192.168.10.115:6080/remote.html?&adp=9ad2904a-482a-43ed-8787-18f136be3323&repeaterID=1001&autoconnect=true&resize=scale&shared=true&reconnect=true&reconnect_delay=5000&scale=true`
-
 scale: (true) was added in order to allow the noVNC client to automatically scale the remote desktop to fit the browser window.
 
-# VNC server for Asset Digitization application
+### Explanation for project adaptation
+
+1. Modify Auth class for token plugin, use python 3 library `requests`
+2. Modify the function `closed` to use `requests` library
+
+
+### The source app start the first step to try to connect to remote ultravnc server
+
+The first step is triggered by the source app, in the version v1.1 this source app is the 3xs AD app, the trigger is located in a button that execute the process of create a session id and token, then perform a request to the url on the proxy or the built-in 3xs server, this requets is to noVNC hmtl client entry point, the url is like this:
+
+```
+http://<proxy_or_3xs_server>/remote.html?adp=<token>
+```
+
+```
+http://10.11.54.40:6080/remote.html?&adp=9ad2904a-482a-43ed-8787-18f136be3323&repeaterID=1006&autoconnect=true&resize=scale&shared=true&reconnect=true&reconnect_delay=5000
+```
+
+The noVNC client redirect the request to the websockify server with the token, then the websockify server validate the token performing a request to the source app, in this case the 3xs AD app, in the url:
+
+```
+http://<ad_app>:80/ahm/cms_validation.json?adp=<token>
+```
+
+The adp app validate the token and return:
+
+```json
+{
+    "validation": true,
+    "id": some data,
+}
+```
+
+The filed validation is true if the token is valid
+
+If the validation is different of true, the websockify server call a functiion `closed` by sendign an id parameter (thus semas to be a random id) and a status filed with string in 0
+
+```python
+# Envia el evento de cierre de la conexion al servidor del Asset Digitization
+def closed(self, id, status):
+    connection = httplib.HTTPConnection(adpapp[0], adpapp[1])
+    connection.request("GET", url+"?id="+str(id)+"&status="+str(status))
+    response = connection.getresponse()
+    connection.close()
+```
+
+When the validation is true the websockify server return the repeater ip and port to upgrade the connection to websocket and start the communication with the remote ultravnc server using the repeater.
+
+### Executing the sebsockify server
+
+The version v1.1 run the proxy with the command:
+
+```bash
+#!/bin/bash
+nohup /usr/local/adpgcc/Version1.1/websockify-master/run \
+--web="/usr/local/adpgcc/Version1.1/noVNC-master" \
+--token-plugin=AuthServer 6080 >> /var/log/adremote.log &
+```
+
+> [!TIP] No hang up, run the programmin background even if terminal windows is closed.
+
+In the line `--token-plugin=AuthServer 6080 >> /var/log/adremote.log &`, AuthServer is the name of the class within the module `token_plugins.py`, by this the logic previously described is implemented, the port 6080 is the port where the websockify server will listen for incoming connections.
+
+Whithin the file `run`:
+
+```bash
+#!/usr/bin/env sh
+set -e
+cd "$(dirname "$0")"
+exec python -m websockify "$@"
+```
+
+Explanation:
+- `#!/usr/bin/env sh`: Especifica que el script debe ejecutarse con el intérprete de comandos `sh`.
+- `set -e`: Hace que el script se detenga si cualquier comando devuelve un error.
+- `cd "$(dirname "$0")"`: Cambia el directorio de trabajo al directorio donde se encuentra el script, asegurando que los comandos posteriores se ejecuten en el contexto correcto.
+- `exec python -m websockify "$@"`: Ejecuta el módulo `websockify` con cualquier argumento que se le haya pasado al script, reemplazando el proceso actual del script con el proceso de Python. Esto es útil para asegurar que el script se ejecute correctamente y que cualquier argumento se pase al módulo `websockify` sin necesidad de manejar manualmente los argumentos dentro del script.
+
+### Connection URL to noVNC:
+Connection URL to noVNC:
+
+`http://192.168.10.115:6080/remote.html?&adp=9ad2904a-482a-43ed-8787-18f136be3323&repeaterID=1001&autoconnect=true&resize=scale&shared=true&reconnect=true&reconnect_delay=5000&scale=true`
+
+### VNC server for Asset Digitization application
 
 
 ```mermaid
@@ -692,7 +687,7 @@ graph TD
     R -->|VNC| S
 ```
 
-# Sequence diagram for VNC connection through the proxy server
+### Sequence diagram for VNC connection through the proxy server
 ```mermaid
 sequenceDiagram
     box Proxy Server
