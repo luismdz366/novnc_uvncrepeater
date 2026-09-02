@@ -389,6 +389,10 @@ Modify the file with the content configured for RCMS, save file.
 sudo nano uvncrepeater.ini
 ```
 
+Put in the `uvncrepeater.ini` a configuration suitable for the RCMS setup.
+Can be used next:
+locates in: `./uvncrep_ini/uvncrepeater.ini` in relative path of this repository.
+
 Restart the uvncrepeater service to apply the changes:
 ```bash
 sudo systemctl restart uvncrepeater
