@@ -37,6 +37,8 @@ This project implements websockify under python 3, it is an adaptation from the 
   - [16. Create service user](#16-create-service-user)
   - [17. Create systemd service for websockify](#17-create-systemd-service-for-websockify)
   - [18. Linux Utilities](#18-linux-utilities)
+    - [Configuring proxy](#configuring-proxy)
+    - [List Services and Open Ports](#list-services-and-open-ports)
     - [Configs from Ad tech team](#configs-from-ad-tech-team)
     - [Explanation for project adaptation](#explanation-for-project-adaptation)
     - [The source app start the first step to try to connect to remote ultravnc server](#the-source-app-start-the-first-step-to-try-to-connect-to-remote-ultravnc-server)
@@ -306,13 +308,14 @@ journalctl -u uvncrepeater -f
 ```
 Give permissions to the ini file, and log file to the user uvncrep:
 
-Take account, when you need to make troubleshooting, you nwil need to give a look in the log file:
-```bash
-cat /var/log/uvncrepeater.log
-```
 ```bash
 sudo chown uvncrep:uvncrep /etc/uvnc/uvncrepeater.ini
 sudo chown uvncrep:uvncrep /var/log/uvncrepeater.log
+```
+
+Take account, when you need to make troubleshooting, you nwil need to give a look in the log file:
+```bash
+cat /var/log/uvncrepeater.log
 ```
 ## 10. Keep the old `init.d` script as a reference and confirm the systemd service file
 script de init.d (for reference)
@@ -558,6 +561,16 @@ Path directory references:
 
 ## 18. Linux Utilities
 
+### Configuring proxy
+
+To configure a proxy for the user to allow apt update or installation of packages, you can set the `http_proxy` and `https_proxy` environment variables. For example:
+
+```bash
+export http_proxy="http://your-proxy-server:port"
+export https_proxy="http://your-proxy-server:port"
+```
+
+### List Services and Open Ports
 List services:
 ```bash
 systemctl list-units --type=service 
