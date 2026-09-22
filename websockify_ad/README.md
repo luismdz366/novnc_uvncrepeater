@@ -16,6 +16,7 @@ This project implements websockify under python 3, it is an adaptation from the 
 - [Installation of RCMS in Ubuntu Server](#installation-of-rcms-in-ubuntu-server)
   - [Summary](#summary)
   - [Basic componentes](#basic-componentes)
+  - [The source code that will be used for UltraVNC Repeater also is available in `./resources/uvncrepeater.tar.gz`. You can use this file instead of downloading it from the internet if needed.](#the-source-code-that-will-be-used-for-ultravnc-repeater-also-is-available-in-resourcesuvncrepeatertargz-you-can-use-this-file-instead-of-downloading-it-from-the-internet-if-needed)
   - [1. Download the ultravnc server](#1-download-the-ultravnc-server)
   - [2. Install UVNC Repeater](#2-install-uvnc-repeater)
   - [3. Add user for service](#3-add-user-for-service)
@@ -56,6 +57,7 @@ This project implements websockify under python 3, it is an adaptation from the 
 3. UltraVNC Repeater
 4. UltraVNC Server
 
+The source code that will be used for UltraVNC Repeater also is available in `./resources/uvncrepeater.tar.gz`. You can use this file instead of downloading it from the internet if needed.
 ---
 
 ## 1. Download the ultravnc server
@@ -66,32 +68,45 @@ mkdir -p ~/uvnc_repeater_tmp
 cd ~/uvnc_repeater_tmp
 ```
 
-If internet access, try in CLI using the following command to download the UltraVNC Repeater source code:
+If internet access, try in CLI using the following command to download the UltraVNC Repeater source code whithin the target directory in the server:
 ```bash
 wget http://www.uvnc.eu/download/repeater/uvncrepeater.tar.gz
 ```
 
-If not, you will need to download the UltraVNC Repeater source code on a machine with internet access and then transfer it to the server using ssh session:
+If not internet access is available on the server, you will need to download the UltraVNC Repeater source code on a machine with internet access and then transfer it to the server using ssh session:
+
+To download in a host using web browser, simply navigate to the URL `http://www.uvnc.eu/download/repeater/uvncrepeater.tar.gz` and save the file to a known location. Then use the `scp` command in a power shell or terminal to transfer it to the server.
+
+Execute in powershell next command, take care for the path where you saved the `uvncrepeater.tar.gz` file just downloaded.
 ```bash
-scp /path/to/uvncrepeater.tar.gz user@server:~/uvnc_repeater
+scp /path/to/uvncrepeater.tar.gz user@server:~/uvnc_repeater_tmp
 ```
 
 ## 2. Install UVNC Repeater
 
+Within the directory where the UltraVNC Repeater source code is located, execute the following commands to compile and install it:
+
 ```bash
-tar -xzf uvncrepeater.tar.gz # Unzip the downloaded file
-cd UVNCRepeater # Go to the unzipped folder
-make # Compile the UltraVNC Repeater
-sudo make install # Install the repeater, this will copy the files to /usr/local/bin and /usr/local/lib
+tar -xzf uvncrepeater.tar.gz
+cd UVNCRepeater
+sudo make
+sudo make install
 ```
 
+Explanation:
+- `tar -xzf uvncrepeater.tar.gz` extracts the downloaded tarball.
+- `cd UVNCRepeater` navigates into the extracted directory.
+- `sudo make` compiles the source code.
+- `sudo make install` installs the compiled binaries and configuration files to the appropriate system directories (e.g., `/usr/local/bin` and `/usr/local/lib`).
+
 If ubuntu is minimized version probably you will need to install the build-essential package:
+Note: For this step, you need to have internet access on the server to download and install the required packages.
 ```bash
 sudo apt update
 sudo apt install build-essential
 ```
 
-expected output:
+Expected output:
 ```bash
 cp -R repeater /usr/sbin/uvncrepeatersvc
 cp -R start-stop-daemon /usr/sbin/start-stop-daemon
@@ -102,17 +117,21 @@ cat message
 add user uvncrep with command: "adduser uvncrep -s /bin/false"
 ```
 
-After installation you can check that the file is in `/usr/sbin/uvncrepeatersvc`
+After installation you can check that the file is in `/usr/sbin/uvncrepeatersvc`.
+Check with next command:
 ```bash
 ls /usr/sbin | grep uvnc
 ```
 
 ## 3. Add user for service
 
+Execute in the terminal the following command to add a system user for the UltraVNC Repeater service:
 ```bash
 sudo useradd -r -s /usr/sbin/nologin uvncrep
 ```
 
+Explanation:
+- `sudo useradd -r -s /usr/sbin/nologin uvncrep` adds a system user named `uvncrep` with no login shell and no home directory.
 `r` &rarr; Creates a system user (no /home directory, reserved UID < 1000)
 `s` &rarr; Assigns a null shell (disables interactive console/SSH login)
 uvncrep &rarr; User name
@@ -126,12 +145,12 @@ cd /usr/sbin
 
 ## 5. Test the repeater manually
 
-execute:
+Execute the following command to test the repeater manually:
 ```bash
 ./uvncrepeatersvc
 ```
 
-if the repeater is running, you should see the following output:
+If the repeater is running, you should see the following output:
 
 ```bash
 UltraVnc Linux Repeater version 0.14
@@ -154,7 +173,7 @@ UltraVnc Fri Aug 28 21:28:31 2026 > listInitializationValues(): useHttpForEventL
 UltraVnc Fri Aug 28 21:28:31 2026 > routeConnections(): starting select() loop, terminate with ctrl+c
 ```
 
-Terminate the repeater with ctrl+c
+Terminate the repeater with ctrl+c.
 
 ```bash
 UltraVnc Fri Apr 17 08:36:19 2026 > listInitializationValues(): viewerPort : 5900
@@ -186,10 +205,6 @@ UltraVnc Fri Apr 17 08:36:19 2026 > routeConnections(): starting select() loop, 
 
 ## 6. Create and configure the `uvncrepeater.service` systemd service
 
-Create the service file:
-```bash
-sudo nano /etc/systemd/system/uvncrepeater.service
-```
 
 If not installed nano, you can install it using the following command:
 ```bash
@@ -199,14 +214,27 @@ sudo apt-get install nano
 
 The script of init.d is a classic script used before systemd, this is pre-systemd (SysVinit or compatible)
 To avoid error with the old init.d script, you should check if it exists and remove it before starting the service with systemd.
+
+Check if the old init.d script exists:
 ```bash
 ls /etc/init.d/uvncrepeater
 ```
-Remove the old script to avoid errors when starting the service with systemd.
+
+If the old init.d script exists, it is recommended to remove it to prevent conflicts with the systemd service.
+Remove the old script to avoid errors when starting the service with systemd. This ensures that the systemd service will be the primary method for managing the UltraVNC Repeater.
 ```bash
 sudo rm /etc/init.d/uvncrepeater
 ```
 
+Create the service file:
+```bash
+sudo nano /etc/systemd/system/uvncrepeater.service
+```
+
+Copy and paste the following content into the `uvncrepeater.service` file.
+
+Next is the content needed for the `uvncrepeater.service` systemd service file.
+It is an adaptation of the old init.d script for use with systemd.
 Content for the service file (Translation from init.d to systemd):
 
 ```ini
@@ -231,6 +259,8 @@ StandardError=append:/var/log/uvncrepeater.log
 [Install]
 WantedBy=multi-user.target
 ```
+
+Save with `ctrl+o` and exit with `ctrl+x`.
 
 Notes:
 Every time after changes in service config restart the service:
@@ -267,16 +297,20 @@ Restart the journal
 sudo systemctl restart systemd-journald
 ```
 
-
 Restart the systemd daemon to recognize the new service:
 ```bash
 sudo systemctl daemon-reload
 ```
+Enable and start the uvncrepeater service
 
+```bash
 sudo systemctl enable uvncrepeater
 sudo systemctl start uvncrepeater
+```
 
 ## 8. Check the status of the `uvncrepeater` service
+
+Ensure the service is running by checking its status:
 ```bash
 sudo systemctl status uvncrepeater
 ```
@@ -297,14 +331,14 @@ The exepected output should show that the uvncrepeater service is active and run
 Aug 28 21:50:23 srvubu115 systemd[1]: Started uvncrepeater.service - UltraVNC Repeater.
 ```
 
+The status is active (running) as shown in the output above in green.
+
 ## 9. Check the service logs with `journalctl` and the repeater log file
 
 To view the logs of the uvncrepeater service, you can use the `journalctl` command:
 
-check logs fo the service:
-
 ```bash
-journalctl -u uvncrepeater -f
+sudo journalctl -u uvncrepeater -f
 ```
 Give permissions to the ini file, and log file to the user uvncrep:
 
@@ -379,7 +413,7 @@ Move to the directory:
 cd /etc/uvnc
 ```
 
-Rename file from the original:
+Rename file from the original to make a backup:
 ```bash
 sudo mv uvncrepeater.ini uvncrepeater_old.ini
 ```
@@ -393,9 +427,16 @@ Put in the `uvncrepeater.ini` a configuration suitable for the RCMS setup.
 Can be used next:
 locates in: `./uvncrep_ini/uvncrepeater.ini` in relative path of this repository.
 
+
+
 Restart the uvncrepeater service to apply the changes:
 ```bash
 sudo systemctl restart uvncrepeater
+```
+
+Check the status of the uvncrepeater service to ensure it is running correctly:
+```bash
+sudo systemctl status uvncrepeater
 ```
 
 ## 12. Install websockify and noVNC
@@ -412,7 +453,7 @@ cd /opt/adwebsockify
 ```
 
 ## 13. Clone the repositories for websockify and noVNC into the target directory
-
+TODO: Complement with the sudo chown -R adp:adp /opt/adwebsockify
 Whithin the target directory, clone the repository:
 ```bash
 git clone --depth 1 https://github.com/luismdz366/novnc_uvncrepeater.git .
@@ -421,7 +462,7 @@ git clone --depth 1 https://github.com/luismdz366/novnc_uvncrepeater.git .
 Or as an alternative, you can manually download the repository as a ZIP file from GitHub and extract it into the target directory.
 
 ## 14. Configure the token plugin for the 3D app server
-
+TODO: Complement the path for configuration
 In the file `token_plugins.py`
 Located in:
 ```bash
@@ -509,7 +550,7 @@ Create a systemd service file for websockify:
 ```bash
 sudo nano /etc/systemd/system/websockify.service
 ```
-
+TODO: Modificar a una sola linea el ExecStart
 Add the following content to the file:
 ```ini
 [Unit]
