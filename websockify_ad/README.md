@@ -32,6 +32,8 @@ This project implements websockify under python 3, it is an adaptation from the 
   - [12. Install websockify and noVNC](#12-install-websockify-and-novnc)
     - [Create target directory for websockify and noVNC](#create-target-directory-for-websockify-and-novnc)
   - [13. Clone the repositories for websockify and noVNC into the target directory](#13-clone-the-repositories-for-websockify-and-novnc-into-the-target-directory)
+    - [Move the source code to the target directory](#move-the-source-code-to-the-target-directory)
+      - [For AD Tech team deployment standard:](#for-ad-tech-team-deployment-standard)
   - [14. Configure the token plugin for the 3D app server](#14-configure-the-token-plugin-for-the-3d-app-server)
   - [15. Install Python dependencies for Python 3](#15-install-python-dependencies-for-python-3)
     - [Install Numpy and requests for Python 3](#install-numpy-and-requests-for-python-3)
@@ -76,6 +78,8 @@ wget http://www.uvnc.eu/download/repeater/uvncrepeater.tar.gz
 If not internet access is available on the server, you will need to download the UltraVNC Repeater source code on a machine with internet access and then transfer it to the server using ssh session:
 
 To download in a host using web browser, simply navigate to the URL `http://www.uvnc.eu/download/repeater/uvncrepeater.tar.gz` and save the file to a known location. Then use the `scp` command in a power shell or terminal to transfer it to the server.
+
+Also in this repository is hosted the source code for the repeater in the file `./resources/uvncrepeater.tar.gz`.
 
 Execute in powershell next command, take care for the path where you saved the `uvncrepeater.tar.gz` file just downloaded.
 ```bash
@@ -441,6 +445,25 @@ sudo systemctl status uvncrepeater
 
 ## 12. Install websockify and noVNC
 
+The installation for the proxy service consist in noVNC and websockify.
+
+Websockify is written in python and requires Python 3.6 or higher to run. Ensure that your system has the appropriate version of Python installed before proceeding with the installation.
+
+Normally Ubuntu Server 24.04 LTS (Noble Numbat) comes with Python 3.12 pre-installed.
+
+Check the Python version installed on your system:
+```bash
+python3 --version
+```
+In case the Python version is lower than 3.6, you will need to install a compatible version of Python before proceeding with the installation of websockify and noVNC.
+
+Install new version of Python if necessary, internet connection is required to reach ubuntu repositories:
+```bash
+sudo apt update
+sudo apt install python3.12
+```
+
+
 ### Create target directory for websockify and noVNC
 
 ```bash
@@ -453,7 +476,25 @@ cd /opt/adwebsockify
 ```
 
 ## 13. Clone the repositories for websockify and noVNC into the target directory
+
+### Move the source code to the target directory
+
+#### For AD Tech team deployment standard:
+
+It involves to freeze all source code withing a zip file and labeled with a version control, with this 
+method, will be required to download the zip file and copy in a temporary directory in the ubuntu server.
+The curent package for websockify/noVNC is given in the respository same with this guide. Ensure that the zip file is extracted into a temporary directory before moving it to the target directory.
+For example, if the zip file is downloaded to `/tmp`, you can extract it using:
+
+Freeze files to package the source code neede to deply proxy:
+/websockify_ad
+
+1. Copy the zip file with the source code to the temporary directory, for example `/proxy_tmp`.
+```bash
+unzip /tmp/novnc_uvncrepeater.zip -d /tmp/novnc_uvncrepeater
+```
 TODO: Complement with the sudo chown -R adp:adp /opt/adwebsockify
+
 Whithin the target directory, clone the repository:
 ```bash
 git clone --depth 1 https://github.com/luismdz366/novnc_uvncrepeater.git .
@@ -473,7 +514,7 @@ open the file and configure the token plugin according to the requirements of th
 
 ```bash
 cd /opt/adwebsockify/websockify_ad/Websockify/websockify
-sudonano token_plugins.py
+sudo nano token_plugins.py
 ```
 
 ```python
