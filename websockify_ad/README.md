@@ -34,11 +34,11 @@ This project implements websockify under python 3, it is an adaptation from the 
   - [13. Clone the repositories for websockify and noVNC into the target directory](#13-clone-the-repositories-for-websockify-and-novnc-into-the-target-directory)
     - [Move the source code to the target directory](#move-the-source-code-to-the-target-directory)
       - [For AD Tech team deployment standard:](#for-ad-tech-team-deployment-standard)
-  - [14. Configure the token plugin for the 3D app server](#14-configure-the-token-plugin-for-the-3d-app-server)
   - [15. Install Python dependencies for Python 3](#15-install-python-dependencies-for-python-3)
     - [Install Numpy and requests for Python 3](#install-numpy-and-requests-for-python-3)
   - [16. Create service user](#16-create-service-user)
   - [17. Create systemd service for websockify](#17-create-systemd-service-for-websockify)
+  - [14. Configure the token plugin for the 3D app server](#14-configure-the-token-plugin-for-the-3d-app-server)
   - [18. Linux Utilities](#18-linux-utilities)
     - [Configuring proxy](#configuring-proxy)
     - [List Services and Open Ports](#list-services-and-open-ports)
@@ -463,7 +463,6 @@ sudo apt update
 sudo apt install python3.12
 ```
 
-
 ### Create target directory for websockify and noVNC
 
 ```bash
@@ -473,6 +472,10 @@ sudo mkdir -p /opt/adwebsockify
 Move to the target directory:
 ```bash
 cd /opt/adwebsockify
+```
+Assign permissions of the target directory to the `adp` user and group to allow proper access.
+```bash
+sudo chown -R adp:adp /opt/adwebsockify
 ```
 
 ## 13. Clone the repositories for websockify and noVNC into the target directory
@@ -484,33 +487,152 @@ cd /opt/adwebsockify
 It involves to freeze all source code withing a zip file and labeled with a version control, with this 
 method, will be required to download the zip file and copy in a temporary directory in the ubuntu server.
 The curent package for websockify/noVNC is given in the respository same with this guide. Ensure that the zip file is extracted into a temporary directory before moving it to the target directory.
-For example, if the zip file is downloaded to `/tmp`, you can extract it using:
 
-Freeze files to package the source code neede to deply proxy:
-/websockify_ad
+`Until this release the version for the zip deployment artifact is v2.0.`
 
-1. Copy the zip file with the source code to the temporary directory, for example `/proxy_tmp`.
+Copy the zip deployment file to the temporary directory, for example `/proxy_tmp`.
 ```bash
-unzip /tmp/novnc_uvncrepeater.zip -d /tmp/novnc_uvncrepeater
-```
-TODO: Complement with the sudo chown -R adp:adp /opt/adwebsockify
-
-Whithin the target directory, clone the repository:
-```bash
-git clone --depth 1 https://github.com/luismdz366/novnc_uvncrepeater.git .
+sudo mkdir -p ~/proxy_tmp
 ```
 
-Or as an alternative, you can manually download the repository as a ZIP file from GitHub and extract it into the target directory.
+Use powershell in in the windows host to copy the zip file to the temporary directory `/proxy_tmp` on the Ubuntu server. For example:
+```powershell
+scp "C:\path\to\v2.0.zip" <username>@<ubuntu_server_ip>:~/proxy_tmp/
+```
+Check listing the files if the zip file has been successfully copied:
+```bash
+ls ~/proxy_tmp
+```
+Perform unzip the source code into `/opt/adwebsockify` directory, for example:
+```bash
+unzip ~/proxy_tmp/v2.0.zip -d /opt/adwebsockify
+```
+
+This is important, because the services that we will install later depend on the files being correctly placed in the target directory, in special in the path `/opt/adwebsockify`, this place is the best practice for deployment in Ubuntu servers and ensure a different location form the user home directory.
+
+Notes: If unzip is not installed on your system, you can install it using the following command:
+```bash
+sudo apt update
+sudo apt install unzip
+```
+
+## 15. Install Python dependencies for Python 3
+
+### Install Numpy and requests for Python 3
+In case the current Ubuntu Python 3 installation does not include the `numpy`  and `requests` library by default, you can install it using the following commands:
+
+```bash
+sudo apt update
+sudo apt install python3-numpy python3-requests
+```
+
+Check Python dependencies:
+```bash
+python3 -c "import numpy, requests; print('Python dependencies OK')"
+```
+
+## 16. Create service user
+
+Create a dedicated user for running the Websockify service:
+```bash
+sudo useradd \
+    --system \
+    --no-create-home \
+    --shell /usr/sbin/nologin \
+    websockify
+```
+
+Add the current user to the websockify group:
+```bash
+sudo usermod -aG websockify "$USER"
+```
+
+Log out and log back in for the group changes to take effect, close ssh sessions and reconnect.
+
+Grant group access to the Websockify/noVNC installation directory:
+```bash
+sudo chown -R root:websockify /opt/adwebsockify
+sudo chmod -R g+rwX /opt/adwebsockify
+sudo find /opt/adwebsockify -type d -exec chmod g+s {} \;
+```
+Explanation:
+The commands above change the ownership of the `/opt/adwebsockify` directory to the `root` user and the `websockify` group, grant read, write, and execute permissions to the group, and set the setgid bit on all directories to ensure that new files and directories inherit the group ownership.
+
+## 17. Create systemd service for websockify
+
+Create a systemd service file for websockify:
+```bash
+sudo nano /etc/systemd/system/websockify.service
+```
+
+Add the following content to the file:
+```ini
+[Unit]
+Description=Websockify noVNC Proxy
+After=network.target
+
+[Service]
+Type=simple
+
+User=websockify
+Group=websockify
+
+WorkingDirectory=/opt/adwebsockify/websockify_ad/Websockify
+
+ExecStart=/opt/adwebsockify/Websockify/run --web /opt/adwebsockify/noVNC --token-plugin AuthServer 6080
+
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Save with `Ctrl+O` and exit with `Ctrl+X`.
+
+Put attention in the `ExecStart` line, ensuring that the path to the `run` script and the `--web` and `--token-plugin` options are correctly specified.
+
+`/opt/adwebsockify/Websockify/run`: This is the main executable script for Websockify, responsible for starting the Websockify server with the specified options. Ensure that this path matches the actual location of the `run` script in your installation in `/opt/adwebsockify/Websockify`.
+`--web`: This option specifies the path to the web content that will be served by Websockify, typically pointing to the noVNC directory. In this case, it is set to `/opt/adwebsockify/noVNC`.
+`--token-plugin`: This option specifies the authentication plugin to be used by Websockify. In this case, it is set to `AuthServer`, which should correspond to the AD customization implemented for authentication, later explained in the documentation.
+
+Reload systemd to apply the changes:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable websockify
+sudo systemctl start websockify
+```
+
+Check status:
+```bash
+sudo systemctl status websockify
+```
+
+Check logs with journalctl:
+```bash
+journalctl -u websockify -f
+```
+
+Path directory references:
+
+```
+/opt        → application installed
+/etc        → configuration
+/var/lib    → persistent data
+/var/log    → logs
+/etc/systemd/system → service
+```
 
 ## 14. Configure the token plugin for the 3D app server
 TODO: Complement the path for configuration
+
 In the file `token_plugins.py`
 Located in:
 ```bash
 cd /opt/adwebsockify/websockify_ad/Websockify/websockify
 ```
 
-open the file and configure the token plugin according to the requirements of the 3D app server. Save the changes after editing.
+Open the file and configure the token plugin according to the requirements of the 3D app server. Save the changes after editing.
 
 ```bash
 cd /opt/adwebsockify/websockify_ad/Websockify/websockify
@@ -544,106 +666,6 @@ Set:
 `adpapp` = ('192.168.10.101', 1088) -> The ip and port for the 3D app server, usually port is 80
 
 Ctrl+O to save the file and Ctrl+X to exit the editor.
-
-## 15. Install Python dependencies for Python 3
-
-### Install Numpy and requests for Python 3
-In case the current Ubuntu Python 3 installation does not include the `numpy`  and `requests` library by default, you can install it using the following commands:
-
-```bash
-sudo apt update
-sudo apt install python3-numpy python3-requests
-```
-
-Check Python dependencies:
-```bash
-python3 -c "import numpy, requests; print('Python dependencies OK')"
-```
-
-## 16. Create service user
-
-Create a dedicated user for running the Websockify service:
-```bash
-sudo useradd \
-    --system \
-    --no-create-home \
-    --shell /usr/sbin/nologin \
-    websockify
-```
-
-Add the current user to the websockify group:
-```bash
-sudo usermod -aG websockify "$USER"
-```
-
-Log out and log back in for the group changes to take effect.
-
-Grant group access to the Websockify/noVNC installation directory:
-```bash
-sudo chown -R root:websockify /opt/adwebsockify
-sudo chmod -R g+rwX /opt/adwebsockify
-sudo find /opt/adwebsockify -type d -exec chmod g+s {} \;
-```
-
-## 17. Create systemd service for websockify
-
-Create a systemd service file for websockify:
-```bash
-sudo nano /etc/systemd/system/websockify.service
-```
-TODO: Modificar a una sola linea el ExecStart
-Add the following content to the file:
-```ini
-[Unit]
-Description=Websockify noVNC Proxy
-After=network.target
-
-[Service]
-Type=simple
-
-User=websockify
-Group=websockify
-
-WorkingDirectory=/opt/adwebsockify/websockify_ad/Websockify
-
-ExecStart=/opt/adwebsockify/websockify_ad/Websockify/run \
-    --web /opt/adwebsockify/websockify_ad/noVNC \
-    --token-plugin AuthServer \
-    6080
-
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Reload systemd to apply the changes:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable websockify
-sudo systemctl start websockify
-```
-
-Check status:
-```bash
-sudo systemctl status websockify
-```
-
-Check logs with journalctl:
-```bash
-journalctl -u websockify -f
-```
-
-Path directory references:
-
-```
-/opt        → application installed
-/etc        → configuration
-/var/lib    → persistent data
-/var/log    → logs
-/etc/systemd/system → service
-```
 
 ## 18. Linux Utilities
 
