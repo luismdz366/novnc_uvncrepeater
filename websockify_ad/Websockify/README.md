@@ -175,34 +175,7 @@ before running `python3 setup.py install`.
 Afterwards, websockify should be available in your path. Run
 `websockify --help` to confirm it's installed correctly.
 
+Conneciton url to noVNC:
+`http://192.168.10.115:6080/remote.html?&adp=9ad2904a-482a-43ed-8787-18f136be3323&repeaterID=1001&autoconnect=true&resize=scale&shared=true&reconnect=true&reconnect_delay=5000&scale=true`
 
-### Running with Docker/Podman
-You can also run websockify using Docker, Podman, Singularity, udocker or
-your favourite container runtime that support OCI container images.
-
-The entrypoint of the image is the `run` command.
-
-To build the image:
-```
-./docker/build.sh
-```
-
-Once built you can just launch it with the same
-arguments you would give to the `run` command and taking care of
-assigning the port mappings:
-```
-docker run -it --rm -p <port>:<container_port> novnc/websockify <container_port> <run_arguments>
-```
-
-For example to forward traffic from local port 7000 to 10.1.1.1:5902
-you can use:
-```
-docker run -it --rm -p 7000:80 novnc/websockify 80 10.1.1.1:5902
-```
-
-If you need to include files, like for example for the `--web` or `--cert`
-options you can just mount the required files in the `/data` volume and then
-you can reference them in the usual way:
-```
-docker run -it --rm -p 443:443 -v websockify-data:/data novnc/websockify --cert /data/self.pem --web /data/noVNC :443 --token-plugin TokenRedis --token-source myredis.local:6379 --ssl-only --ssl-version tlsv1_2
-```
+scale: (true) was added in order to allow the noVNC client to automatically scale the remote desktop to fit the browser window.
